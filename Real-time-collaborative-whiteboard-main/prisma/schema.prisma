@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+   url      = env("DATABASE_URL")
+}
+
+model User {
+  name          String
+  id            Int        @id @default(autoincrement())
+  email         String     @unique
+  password      String
+  createdRooms  Room[]     @relation("CreatedRooms")
+  roomUsers     RoomUser[]
+}
+
+model Room {
+  id            Int        @id @default(autoincrement())
+  name          String
+  room_code     String     @unique
+  createdById   Int
+  createdBy     User       @relation("CreatedRooms", fields: [createdById], references: [id])
+  roomUsers     RoomUser[]
+  snapshots     Snapshot[]
+}
+
+model RoomUser {
+  id        Int        @id @default(autoincrement())
+  userId    Int
+  roomId    Int
+  role      RoomRole   @default(PEER)
+  status    RoomStatus @default(PENDING)
+  user      User       @relation(fields: [userId], references: [id])
+  room      Room       @relation(fields: [roomId], references: [id])
+
+  @@unique([userId, roomId])
+}
+
+model Snapshot {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  room      Room     @relation(fields: [roomId], references: [id])
+  label     String
+  state     String
+  createdAt DateTime @default(now())
+}
+
+enum RoomRole {
+  HOST
+  PEER
+}
+
+enum RoomStatus {
+  PENDING
+  APPROVED
+  JOINED
+  LEFT
+  KICKED
+}
